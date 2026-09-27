@@ -1,0 +1,6 @@
+{
+  "name": "CENTSIBLE",
+  "description": "AI-powered personal finance and wealth management app featuring multi-currency accounts, UPI auto-expense parser, receipt OCR scanner, intelligent financial chatbot, and visual spending analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

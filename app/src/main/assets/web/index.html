@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CENTSIBLE — Intelligent Money Management & Cloud Vault</title>
+  <meta name="description" content="AI-powered multi-currency wealth management, UPI automated tracking, budget goals, and financial intelligence.">
+  <meta name="theme-color" content="#0B132B">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2310B981'%3E%3Cpath d='M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z'/%3E%3C/svg%3E">
+  
+  <!-- Tailwind CSS & Google Fonts -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              dark: '#080E1E',
+              card: '#111A30',
+              elevated: '#1B2642',
+              border: '#233254',
+              emerald: '#10B981',
+              emeraldLight: '#34D399',
+              sapphire: '#3B82F6',
+              gold: '#F59E0B',
+              rose: '#EF4444'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons & Chart.js -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0B132B;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #233254;
+      border-radius: 4px;
+    }
+    .ticker-wrap {
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .ticker-move {
+      display: inline-block;
+      animation: ticker 35s linear infinite;
+    }
+    @keyframes ticker {
+      0% { transform: translate3d(0, 0, 0); }
+      100% { transform: translate3d(-50%, 0, 0); }
+    }
+  </style>
+</head>
+<body class="bg-brand-dark text-slate-100 min-h-screen flex flex-col antialiased selection:bg-brand-emerald selection:text-black custom-scrollbar">
+
+  <!-- Top Global Header -->
+  <header class="sticky top-0 z-40 bg-brand-dark/90 backdrop-blur-md border-b border-brand-border px-4 lg:px-8 py-3.5 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-emerald to-brand-sapphire flex items-center justify-center shadow-lg shadow-brand-emerald/20 text-brand-dark">
+        <i data-lucide="trending-up" class="w-6 h-6 stroke-[2.5]"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="text-xl font-black tracking-wider text-white">CENTSIBLE</span>
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-emerald/20 text-brand-emeraldLight border border-brand-emerald/30">
+            <span class="w-1.5 h-1.5 rounded-full bg-brand-emerald mr-1.5 animate-pulse"></span> LIVE
+          </span>
+        </div>
+        <p class="text-xs text-slate-400 font-medium">Intelligent Money Management & Cloud Vault</p>
+      </div>
+    </div>
+
+    <!-- Currency & Quick Actions -->
+    <div class="flex items-center space-x-3">
+      <!-- Currency Selector -->
+      <div class="relative">
+        <select id="currencySelector" onchange="centsibleApp.setCurrency(this.value)" class="bg-brand-card border border-brand-border text-xs font-semibold rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-brand-emerald cursor-pointer pr-8 appearance-none">
+          <option value="USD">USD ($)</option>
+          <option value="EUR">EUR (€)</option>
+          <option value="GBP">GBP (£)</option>
+          <option value="INR">INR (₹)</option>
+          <option value="JPY">JPY (¥)</option>
+          <option value="CAD">CAD (C$)</option>
+          <option value="AUD">AUD (A$)</option>
+        </select>
+        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none"></i>
+      </div>
+
+      <!-- Quick Add Button -->
+      <button onclick="centsibleApp.openModal('addTxModal')" class="hidden sm:inline-flex items-center space-x-1.5 bg-gradient-to-r from-brand-emerald to-emerald-500 hover:from-brand-emeraldLight hover:to-brand-emerald text-brand-dark font-bold text-xs px-3.5 py-2 rounded-lg shadow-md shadow-brand-emerald/20 transition-all">
+        <i data-lucide="plus" class="w-4 h-4 stroke-[3]"></i>
+        <span>Add Transaction</span>
+      </button>
+
+      <!-- Vault Lock Button -->
+      <button onclick="centsibleApp.toggleVaultLock()" id="vaultLockBtn" title="Lock Vault" class="p-2 rounded-lg bg-brand-card hover:bg-brand-elevated border border-brand-border text-slate-300 hover:text-white transition">
+        <i data-lucide="lock" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Live Market Ticker -->
+  <div class="bg-brand-card/50 border-b border-brand-border/60 py-1.5 ticker-wrap text-xs font-mono">
+    <div class="ticker-move space-x-8" id="tickerItems">
+      <!-- Ticker generated dynamically -->
+    </div>
+  </div>
+
+  <!-- Navigation Bar -->
+  <nav class="bg-brand-card border-b border-brand-border px-4 lg:px-8 py-2 overflow-x-auto custom-scrollbar flex items-center space-x-2 text-xs font-semibold">
+    <button onclick="centsibleApp.switchTab('dashboard')" class="tab-btn active px-3.5 py-2 rounded-lg transition flex items-center space-x-2 bg-brand-emerald/20 text-brand-emerald border border-brand-emerald/30" data-tab="dashboard">
+      <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+      <span>Dashboard</span>
+    </button>
+    <button onclick="centsibleApp.switchTab('transactions')" class="tab-btn px-3.5 py-2 rounded-lg transition flex items-center space-x-2 text-slate-400 hover:text-white hover:bg-brand-elevated" data-tab="transactions">
+      <i data-lucide="receipt" class="w-4 h-4"></i>
+      <span>Ledger & Transactions</span>
+    </button>
+    <button onclick="centsibleApp.switchTab('budgets')" class="tab-btn px-3.5 py-2 rounded-lg transition flex items-center space-x-2 text-slate-400 hover:text-white hover:bg-brand-elevated" data-tab="budgets">
+      <i data-lucide="target" class="w-4 h-4"></i>
+      <span>Budgets & Goals</span>
+    </button>
+    <button onclick="centsibleApp.switchTab('advisor')" class="tab-btn px-3.5 py-2 rounded-lg transition flex items-center space-x-2 text-slate-400 hover:text-white hover:bg-brand-elevated" data-tab="advisor">
+      <i data-lucide="bot" class="w-4 h-4 text-brand-emeraldLight"></i>
+      <span>Aura AI Advisor</span>
+    </button>
+    <button onclick="centsibleApp.switchTab('upi')" class="tab-btn px-3.5 py-2 rounded-lg transition flex items-center space-x-2 text-slate-400 hover:text-white hover:bg-brand-elevated" data-tab="upi">
+      <i data-lucide="smartphone-nfc" class="w-4 h-4"></i>
+      <span>UPI & SMS Tracker</span>
+    </button>
+    <button onclick="centsibleApp.switchTab('scanner')" class="tab-btn px-3.5 py-2 rounded-lg transition flex items-center space-x-2 text-slate-400 hover:text-white hover:bg-brand-elevated" data-tab="scanner">
+      <i data-lucide="scan-line" class="w-4 h-4"></i>
+      <span>Receipt Scanner</span>
+    </button>
+    <button onclick="centsibleApp.switchTab('accounts')" class="tab-btn px-3.5 py-2 rounded-lg transition flex items-center space-x-2 text-slate-400 hover:text-white hover:bg-brand-elevated" data-tab="accounts">
+      <i data-lucide="building-2" class="w-4 h-4"></i>
+      <span>Bank Accounts</span>
+    </button>
+    <button onclick="centsibleApp.switchTab('reports')" class="tab-btn px-3.5 py-2 rounded-lg transition flex items-center space-x-2 text-slate-400 hover:text-white hover:bg-brand-elevated" data-tab="reports">
+      <i data-lucide="pie-chart" class="w-4 h-4"></i>
+      <span>Analytics & Share</span>
+    </button>
+  </nav>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+    <!-- TAB: DASHBOARD -->
+    <section id="tab-dashboard" class="tab-content space-y-6">
+      
+      <!-- Top Overview Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Total Net Worth Card -->
+        <div class="p-5 rounded-2xl bg-gradient-to-br from-brand-card to-brand-elevated border border-brand-border shadow-xl relative overflow-hidden">
+          <div class="absolute -right-6 -bottom-6 w-28 h-28 bg-brand-emerald/10 rounded-full blur-xl pointer-events-none"></div>
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold">
+            <span>TOTAL NET WORTH</span>
+            <span class="inline-flex items-center text-brand-emeraldLight text-[11px] font-bold">
+              <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 mr-0.5"></i> +8.4%
+            </span>
+          </div>
+          <div class="mt-2 text-3xl font-extrabold tracking-tight text-white font-mono" id="netWorthDisplay">$114,840.00</div>
+          <div class="mt-3 flex items-center space-x-2 text-xs text-slate-400">
+            <span class="w-2 h-2 rounded-full bg-brand-emerald"></span>
+            <span>Consolidated across 5 bank vaults</span>
+          </div>
+        </div>
+
+        <!-- Monthly Income Card -->
+        <div class="p-5 rounded-2xl bg-brand-card border border-brand-border shadow-xl">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold">
+            <span>MONTHLY INFLOW</span>
+            <div class="p-1.5 rounded-lg bg-emerald-500/10 text-brand-emeraldLight">
+              <i data-lucide="trending-up" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-2 text-2xl font-extrabold text-brand-emeraldLight font-mono" id="monthlyIncomeDisplay">$8,450.00</div>
+          <div class="mt-2 text-xs text-slate-400">Active salary, yields & dividends</div>
+        </div>
+
+        <!-- Monthly Expense Card -->
+        <div class="p-5 rounded-2xl bg-brand-card border border-brand-border shadow-xl">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold">
+            <span>MONTHLY SPEND</span>
+            <div class="p-1.5 rounded-lg bg-rose-500/10 text-brand-rose">
+              <i data-lucide="trending-down" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-2 text-2xl font-extrabold text-brand-rose font-mono" id="monthlyExpenseDisplay">$2,860.00</div>
+          <div class="mt-2 text-xs text-slate-400">Within safe 34% total allowance</div>
+        </div>
+
+        <!-- Savings Rate Card -->
+        <div class="p-5 rounded-2xl bg-brand-card border border-brand-border shadow-xl">
+          <div class="flex items-center justify-between text-slate-400 text-xs font-semibold">
+            <span>SAVINGS RATE</span>
+            <div class="p-1.5 rounded-lg bg-brand-gold/10 text-brand-gold">
+              <i data-lucide="shield-check" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div class="mt-2 text-2xl font-extrabold text-brand-gold font-mono" id="savingsRateDisplay">66.2%</div>
+          <div class="mt-2 text-xs text-slate-400">Above financial independence target</div>
+        </div>
+      </div>
+
+      <!-- Quick Action Floating Row -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <button onclick="centsibleApp.openModal('addTxModal')" class="p-3.5 rounded-xl bg-brand-card hover:bg-brand-elevated border border-brand-border flex items-center space-x-3 transition group">
+          <div class="p-2 rounded-lg bg-brand-emerald/10 text-brand-emerald group-hover:scale-110 transition">
+            <i data-lucide="plus-circle" class="w-5 h-5"></i>
+          </div>
+          <div class="text-left">
+            <div class="text-xs font-bold text-white">Record Expense</div>
+            <div class="text-[11px] text-slate-400">Add to ledger</div>
+          </div>
+        </button>
+
+        <button onclick="centsibleApp.switchTab('upi')" class="p-3.5 rounded-xl bg-brand-card hover:bg-brand-elevated border border-brand-border flex items-center space-x-3 transition group">
+          <div class="p-2 rounded-lg bg-brand-sapphire/10 text-brand-sapphire group-hover:scale-110 transition">
+            <i data-lucide="smartphone-nfc" class="w-5 h-5"></i>
+          </div>
+          <div class="text-left">
+            <div class="text-xs font-bold text-white">Parse UPI SMS</div>
+            <div class="text-[11px] text-slate-400">Instant extraction</div>
+          </div>
+        </button>
+
+        <button onclick="centsibleApp.switchTab('scanner')" class="p-3.5 rounded-xl bg-brand-card hover:bg-brand-elevated border border-brand-border flex items-center space-x-3 transition group">
+          <div class="p-2 rounded-lg bg-brand-gold/10 text-brand-gold group-hover:scale-110 transition">
+            <i data-lucide="scan" class="w-5 h-5"></i>
+          </div>
+          <div class="text-left">
+            <div class="text-xs font-bold text-white">Scan Receipt</div>
+            <div class="text-[11px] text-slate-400">OCR digitized</div>
+          </div>
+        </button>
+
+        <button onclick="centsibleApp.switchTab('advisor')" class="p-3.5 rounded-xl bg-brand-card hover:bg-brand-elevated border border-brand-border flex items-center space-x-3 transition group">
+          <div class="p-2 rounded-lg bg-emerald-500/10 text-brand-emerald group-hover:scale-110 transition">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+          </div>
+          <div class="text-left">
+            <div class="text-xs font-bold text-white">Ask Aura AI</div>
+            <div class="text-[11px] text-slate-400">Wealth strategist</div>
+          </div>
+        </button>
+      </div>
+
+      <!-- Main Dashboard Grid (Recent Tx & Budgets) -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left: Recent Transactions (2 cols) -->
+        <div class="lg:col-span-2 bg-brand-card border border-brand-border rounded-2xl p-5 shadow-xl">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="history" class="w-5 h-5 text-brand-emerald"></i>
+              <h2 class="text-base font-bold text-white">Recent Transactions</h2>
+            </div>
+            <button onclick="centsibleApp.switchTab('transactions')" class="text-xs font-semibold text-brand-emerald hover:underline">View All</button>
+          </div>
+          
+          <div class="space-y-3" id="dashboardTxList">
+            <!-- Dynamic Tx Items -->
+          </div>
+        </div>
+
+        <!-- Right: Active Category Budgets (1 col) -->
+        <div class="bg-brand-card border border-brand-border rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <i data-lucide="pie-chart" class="w-5 h-5 text-brand-sapphire"></i>
+              <h2 class="text-base font-bold text-white">Budget Allocation</h2>
+            </div>
+            <button onclick="centsibleApp.switchTab('budgets')" class="text-xs font-semibold text-brand-sapphire hover:underline">Manage</button>
+          </div>
+
+          <div class="space-y-4" id="dashboardBudgetList">
+            <!-- Dynamic Budgets -->
+          </div>
+
+          <!-- Currency Converter Widget -->
+          <div class="pt-4 border-t border-brand-border/60">
+            <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Live Cross-Currency Calculator</h3>
+            <div class="bg-brand-dark/60 rounded-xl p-3 border border-brand-border space-y-2 text-xs">
+              <div class="flex items-center justify-between font-mono">
+                <span class="text-slate-400">$100 USD =</span>
+                <span class="text-brand-emeraldLight font-bold" id="quickCalcResult">₹8,450 INR</span>
+              </div>
+              <div class="text-[11px] text-slate-500">Real-time benchmark forex rate</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- TAB: TRANSACTIONS & LEDGER -->
+    <section id="tab-transactions" class="tab-content hidden space-y-6">
+      <div class="bg-brand-card border border-brand-border rounded-2xl p-5 shadow-xl space-y-4">
+        
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white">Central Ledger</h2>
+            <p class="text-xs text-slate-400">Every inflow, card swipe, and UPI transfer audited with cryptographic precision.</p>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <input type="text" id="txSearchInput" oninput="centsibleApp.renderTransactions()" placeholder="Search transactions..." class="bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-emerald">
+            <select id="txCategoryFilter" onchange="centsibleApp.renderTransactions()" class="bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-emerald">
+              <option value="ALL">All Categories</option>
+              <option value="Food & Dining">Food & Dining</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Transportation">Transportation</option>
+              <option value="Utilities">Utilities</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Income">Income</option>
+            </select>
+            <button onclick="centsibleApp.openModal('addTxModal')" class="bg-brand-emerald text-brand-dark font-bold text-xs px-3.5 py-2 rounded-lg hover:bg-brand-emeraldLight transition flex items-center space-x-1">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>New</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="border-b border-brand-border text-slate-400 font-semibold uppercase tracking-wider">
+                <th class="py-3 px-3">Title / Merchant</th>
+                <th class="py-3 px-3">Category</th>
+                <th class="py-3 px-3">Account</th>
+                <th class="py-3 px-3">Date</th>
+                <th class="py-3 px-3 text-right">Amount</th>
+                <th class="py-3 px-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="fullTransactionTable" class="divide-y divide-brand-border/40">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB: BUDGETS & SAVINGS GOALS -->
+    <section id="tab-budgets" class="tab-content hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Budgets Section -->
+        <div class="bg-brand-card border border-brand-border rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-base font-bold text-white">Monthly Expense Budgets</h2>
+              <p class="text-xs text-slate-400">Threshold alerts trigger automatically at 80% usage.</p>
+            </div>
+            <button onclick="centsibleApp.openModal('addBudgetModal')" class="p-2 rounded-lg bg-brand-elevated hover:bg-brand-border text-slate-200">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <div class="space-y-4" id="budgetCardList">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Savings Goals Section -->
+        <div class="bg-brand-card border border-brand-border rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-base font-bold text-white">Wealth Milestones & Goals</h2>
+              <p class="text-xs text-slate-400">Track emergency funds, vacations, and large acquisitions.</p>
+            </div>
+            <button onclick="centsibleApp.openModal('addGoalModal')" class="p-2 rounded-lg bg-brand-elevated hover:bg-brand-border text-slate-200">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <div class="space-y-4" id="goalCardList">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Smart Investment Strategy Banner -->
+      <div class="p-5 rounded-2xl bg-gradient-to-r from-brand-card to-brand-elevated border border-brand-border flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div class="space-y-1">
+          <div class="flex items-center space-x-2 text-brand-emeraldLight text-xs font-bold uppercase tracking-wider">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+            <span>Recommended Asset Allocation</span>
+          </div>
+          <h3 class="text-sm font-bold text-white">CENTSIBLE Core 3-Tier Growth Framework</h3>
+          <p class="text-xs text-slate-400 max-w-2xl">
+            60% Broad Global Equities (VOO/VTI) • 25% High-Yield Cash & Treasury Reserves • 15% Strategic Thematic Hedging.
+          </p>
+        </div>
+        <button onclick="centsibleApp.switchTab('advisor')" class="px-4 py-2 rounded-xl bg-brand-emerald text-brand-dark text-xs font-bold hover:bg-brand-emeraldLight transition flex items-center space-x-1.5 whitespace-nowrap">
+          <span>Consult Aura AI</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- TAB: AURA AI ADVISOR -->
+    <section id="tab-advisor" class="tab-content hidden space-y-6">
+      <div class="bg-brand-card border border-brand-border rounded-2xl p-5 shadow-xl flex flex-col h-[650px]">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-4 border-b border-brand-border">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-brand-emerald/20 text-brand-emerald flex items-center justify-center border border-brand-emerald/30">
+              <i data-lucide="bot" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="text-sm font-bold text-white">Aura AI Financial Advisor</span>
+                <span class="px-2 py-0.5 rounded text-[10px] bg-brand-emerald/20 text-brand-emerald font-bold">GEMINI AI</span>
+              </div>
+              <p class="text-xs text-slate-400">Context-aware personal wealth strategist</p>
+            </div>
+          </div>
+          <button onclick="centsibleApp.clearAdvisorChat()" class="text-xs text-slate-400 hover:text-white flex items-center space-x-1">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            <span>Clear History</span>
+          </button>
+        </div>
+
+        <!-- Chat Messages Window -->
+        <div id="advisorChatWindow" class="flex-1 overflow-y-auto py-4 space-y-4 custom-scrollbar pr-2">
+          <!-- Initial Welcome Message -->
+          <div class="flex items-start space-x-3">
+            <div class="w-8 h-8 rounded-lg bg-brand-emerald/20 text-brand-emerald flex items-center justify-center flex-shrink-0">
+              <i data-lucide="sparkles" class="w-4 h-4"></i>
+            </div>
+            <div class="bg-brand-elevated border border-brand-border/60 p-3.5 rounded-2xl rounded-tl-sm text-xs text-slate-200 max-w-xl space-y-2 leading-relaxed">
+              <p class="font-semibold text-white">👋 Hello! I am Aura, your dedicated financial strategist inside CENTSIBLE.</p>
+              <p>I have direct real-time context of your multi-currency balances, upcoming budgets, savings milestones, and recent spending transactions. What would you like to review today?</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Suggestion Chips -->
+        <div class="py-2 flex items-center space-x-2 overflow-x-auto custom-scrollbar">
+          <button onclick="centsibleApp.sendAdvisorPrompt('Analyze my spending habits and biggest leaks')" class="text-xs font-medium px-3 py-1.5 rounded-full bg-brand-elevated hover:bg-brand-border border border-brand-border text-slate-300 hover:text-white whitespace-nowrap transition">
+            📊 Analyze Spending
+          </button>
+          <button onclick="centsibleApp.sendAdvisorPrompt('How can I cut dining and food expenses this month?')" class="text-xs font-medium px-3 py-1.5 rounded-full bg-brand-elevated hover:bg-brand-border border border-brand-border text-slate-300 hover:text-white whitespace-nowrap transition">
+            💡 Cut Dining Costs
+          </button>
+          <button onclick="centsibleApp.sendAdvisorPrompt('Review my progress towards the Emergency Fund')" class="text-xs font-medium px-3 py-1.5 rounded-full bg-brand-elevated hover:bg-brand-border border border-brand-border text-slate-300 hover:text-white whitespace-nowrap transition">
+            🎯 Review Goals
+          </button>
+          <button onclick="centsibleApp.sendAdvisorPrompt('What is a smart investment strategy for my cash reserve?')" class="text-xs font-medium px-3 py-1.5 rounded-full bg-brand-elevated hover:bg-brand-border border border-brand-border text-slate-300 hover:text-white whitespace-nowrap transition">
+            📈 Investment Framework
+          </button>
+        </div>
+
+        <!-- Chat Input Bar -->
+        <form onsubmit="centsibleApp.handleAdvisorSubmit(event)" class="pt-3 border-t border-brand-border flex items-center space-x-2">
+          <input type="text" id="advisorInput" placeholder="Ask Aura anything about your finances, budgets, or investments..." class="flex-1 bg-brand-dark border border-brand-border rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-emerald">
+          <button type="submit" class="bg-brand-emerald hover:bg-brand-emeraldLight text-brand-dark px-4 py-2.5 rounded-xl font-bold text-xs flex items-center space-x-1.5 transition">
+            <span>Send</span>
+            <i data-lucide="send" class="w-3.5 h-3.5"></i>
+          </button>
+        </form>
+
+      </div>
+    </section>
+
+    <!-- TAB: UPI & BANK SMS TRACKER -->
+    <section id="tab-upi" class="tab-content hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- SMS Parser Simulator Box -->
+        <div class="bg-brand-card border border-brand-border rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="message-square" class="w-5 h-5 text-brand-emerald"></i>
+            <div>
+              <h2 class="text-base font-bold text-white">Bank & UPI SMS Parser</h2>
+              <p class="text-xs text-slate-400">Extracts payment amount, merchant, and UPI reference automatically.</p>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <label class="block text-xs font-semibold text-slate-300">Paste Bank Alert / UPI SMS Message:</label>
+            <textarea id="upiSmsInput" rows="4" class="w-full bg-brand-dark border border-brand-border rounded-xl p-3 text-xs text-slate-100 font-mono focus:outline-none focus:border-brand-emerald" placeholder="Dear SBI User, A/C 4892 debited by Rs 450.00 on 24Sep26 transfer to Swiggy UPI/627192837482. Bal: Rs 45,210"></textarea>
+
+            <!-- Pre-made SMS samples -->
+            <div class="text-[11px] text-slate-400 flex flex-wrap gap-2 items-center">
+              <span>Quick Samples:</span>
+              <button onclick="centsibleApp.loadSampleSms(1)" class="px-2 py-1 rounded bg-brand-elevated hover:bg-brand-border text-brand-emerald">Swiggy (Rs 450)</button>
+              <button onclick="centsibleApp.loadSampleSms(2)" class="px-2 py-1 rounded bg-brand-elevated hover:bg-brand-border text-brand-sapphire">Shell Petrol (Rs 2,500)</button>
+              <button onclick="centsibleApp.loadSampleSms(3)" class="px-2 py-1 rounded bg-brand-elevated hover:bg-brand-border text-brand-gold">Starbucks ($14.50)</button>
+            </div>
+
+            <div class="flex items-center space-x-2 pt-2">
+              <button onclick="centsibleApp.parseUpiSms()" class="bg-brand-emerald hover:bg-brand-emeraldLight text-brand-dark font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center space-x-1.5">
+                <i data-lucide="zap" class="w-4 h-4"></i>
+                <span>Parse & Extract</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Extraction Output Card -->
+          <div id="upiParsedResult" class="hidden bg-brand-dark/80 rounded-xl p-4 border border-brand-emerald/40 space-y-3 text-xs">
+            <div class="flex items-center justify-between text-brand-emeraldLight font-bold">
+              <span>EXTRACTION SUCCESSFUL</span>
+              <span id="upiExtractedType" class="px-2 py-0.5 rounded bg-brand-emerald/20 text-[10px]">DEBIT</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-slate-300 font-mono">
+              <div>Amount: <span id="upiExtractedAmount" class="font-bold text-white text-sm"></span></div>
+              <div>Merchant: <span id="upiExtractedMerchant" class="font-bold text-white"></span></div>
+              <div>Category: <span id="upiExtractedCategory" class="text-brand-sapphire font-bold"></span></div>
+              <div>Reference: <span id="upiExtractedRef" class="text-slate-400 text-[10px]"></span></div>
+            </div>
+            <button onclick="centsibleApp.saveUpiToLedger()" class="w-full bg-brand-emerald text-brand-dark font-bold py-2 rounded-lg hover:bg-brand-emeraldLight transition flex items-center justify-center space-x-1">
+              <i data-lucide="check" class="w-4 h-4"></i>
+              <span>Add to CENTSIBLE Ledger</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- UPI Parser Technology Guide -->
+        <div class="bg-brand-card border border-brand-border rounded-2xl p-5 shadow-xl space-y-4">
+          <h2 class="text-base font-bold text-white">How CENTSIBLE UPI Tracking Works</h2>
+          <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
+            <div class="flex items-start space-x-3 p-3 rounded-xl bg-brand-elevated/40 border border-brand-border/60">
+              <div class="p-1.5 rounded-lg bg-brand-emerald/10 text-brand-emerald font-bold">1</div>
+              <div>
+                <span class="font-bold text-white">Zero Cloud Leakage:</span>
+                <p class="text-slate-400 mt-0.5">Regex heuristics evaluate SMS patterns locally in the browser or on-device. Your financial notifications never leave your machine.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start space-x-3 p-3 rounded-xl bg-brand-elevated/40 border border-brand-border/60">
+              <div class="p-1.5 rounded-lg bg-brand-sapphire/10 text-brand-sapphire font-bold">2</div>
+              <div>
+                <span class="font-bold text-white">Auto Category Inference:</span>
+                <p class="text-slate-400 mt-0.5">Known merchant signatures (Swiggy, Uber, Shell, Amazon, Starbucks, Zomato) are categorized into food, transport, and utilities instantaneously.</p>
+              </div>
+            </div>
+
+            <div class="flex items-start space-x-3 p-3 rounded-xl bg-brand-elevated/40 border border-brand-border/60">
+              <div class="p-1.5 rounded-lg bg-brand-gold/10 text-brand-gold font-bold">3</div>
+              <div>
+                <span class="font-bold text-white">Deduplication:</span>
+                <p class="text-slate-400 mt-0.5">Reference numbers (UPI/RRN) prevent accidental double accounting across repeated notifications.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB: RECEIPT SCANNER -->
+    <section id="tab-scanner" class="tab-content hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Upload & OCR Trigger -->
+        <div class="bg-brand-card border border-brand-border rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="scan" class="w-5 h-5 text-brand-gold"></i>
+            <div>
+              <h2 class="text-base font-bold text-white">Multimodal Receipt & Invoice Scanner</h2>
+              <p class="text-xs text-slate-400">Digitize paper receipts and invoices into audited ledger records.</p>
+            </div>
+          </div>
+
+          <div class="border-2 border-dashed border-brand-border hover:border-brand-emerald rounded-2xl p-6 text-center cursor-pointer transition flex flex-col items-center justify-center space-y-3" onclick="document.getElementById('receiptFileInput').click()">
+            <input type="file" id="receiptFileInput" accept="image/*" class="hidden" onchange="centsibleApp.handleReceiptUpload(event)">
+            <div class="w-12 h-12 rounded-xl bg-brand-emerald/10 text-brand-emerald flex items-center justify-center">
+              <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-white">Click or Drag & Drop Receipt Photo</div>
+              <div class="text-[11px] text-slate-400">Supports PNG, JPG, WebP</div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <span>Or test with sample:</span>
+            <button onclick="centsibleApp.loadSampleReceipt()" class="text-brand-emerald font-semibold hover:underline">Load Sample Cafe Receipt</button>
+          </div>
+        </div>
+
+        <!-- Scanner Result Preview -->
+        <div class="bg-brand-card border border-brand-border rounded-2xl p-5 shadow-xl space-y-4">
+          <h2 class="text-base font-bold text-white">Digitized Receipt Data</h2>
+          
+          <div id="scannerEmptyState" class="py-12 text-center text-slate-500 text-xs">
+            <i data-lucide="receipt" class="w-10 h-10 mx-auto mb-2 opacity-40"></i>
+            Upload or select a sample receipt to view OCR extraction.
+          </div>
+
+          <div id="scannerResultState" class="hidden space-y-4 text-xs">
+            <div class="bg-brand-dark p-4 rounded-xl border border-brand-border space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-slate-400">Merchant:</span>
+                <span id="scanMerchant" class="font-bold text-white">Artisan Roast & Bakery</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-slate-400">Date:</span>
+                <span id="scanDate" class="font-mono text-slate-200">2026-09-26</span>
+              </div>
+              <div class="flex items-center justify-between font-mono text-sm border-t border-brand-border pt-2">
+                <span class="text-slate-300 font-bold">Total Extracted:</span>
+                <span id="scanTotal" class="text-brand-emeraldLight font-bold text-base">$38.45</span>
+              </div>
+            </div>
+
+            <div>
+              <span class="text-slate-400 font-semibold mb-1 block">Line Items:</span>
+              <ul id="scanLineItems" class="space-y-1 font-mono text-slate-300 bg-brand-dark/50 p-3 rounded-lg border border-brand-border">
+                <!-- Line items -->
+              </ul>
+            </div>
+
+            <button onclick="centsibleApp.saveReceiptToLedger()" class="w-full bg-brand-emerald text-brand-dark font-bold py-2.5 rounded-xl hover:bg-brand-emeraldLight transition flex items-center justify-center space-x-1.5">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i>
+              <span>Save As Expense In Ledger</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB: BANK ACCOUNTS -->
+    <section id="tab-accounts" class="tab-content hidden space-y-6">
+      <div class="bg-brand-card border border-brand-border rounded-2xl p-5 shadow-xl space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white">Multi-Currency Linked Accounts</h2>
+            <p class="text-xs text-slate-400">Institutional accounts synchronized across North America, Europe, and Asia.</p>
+          </div>
+          <button onclick="centsibleApp.simulateBankSync()" id="syncAllBtn" class="bg-brand-elevated hover:bg-brand-border border border-brand-border text-slate-200 text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center space-x-2">
+            <i data-lucide="refresh-cw" class="w-4 h-4" id="syncIcon"></i>
+            <span>Sync All Institutions</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="accountsGrid">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: REPORTS & ANALYTICS -->
+    <section id="tab-reports" class="tab-content hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Category Doughnut Chart -->
+        <div class="bg-brand-card border border-brand-border rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-bold text-white">Outflow Distribution</h2>
+            <span class="text-xs text-brand-emerald font-semibold">Monthly</span>
+          </div>
+          <div class="relative h-64 flex items-center justify-center">
+            <canvas id="categoryChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Financial Health Score & Share -->
+        <div class="lg:col-span-2 bg-brand-card border border-brand-border rounded-2xl p-5 shadow-xl space-y-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-base font-bold text-white">CENTSIBLE Health Score</h2>
+              <p class="text-xs text-slate-400">Calculated from debt-to-income, savings rate, and portfolio diversification.</p>
+            </div>
+            <div class="text-2xl font-black font-mono text-brand-emeraldLight px-3 py-1 bg-brand-emerald/10 border border-brand-emerald/30 rounded-xl">
+              92 / 100
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div class="p-3.5 rounded-xl bg-brand-elevated border border-brand-border">
+              <span class="text-slate-400">Emergency Cushion:</span>
+              <div class="text-sm font-bold text-white mt-1">6.2 Months</div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-brand-elevated border border-brand-border">
+              <span class="text-slate-400">Savings Target:</span>
+              <div class="text-sm font-bold text-brand-emeraldLight mt-1">Met (66.2%)</div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-brand-elevated border border-brand-border">
+              <span class="text-slate-400">Budget Overrun:</span>
+              <div class="text-sm font-bold text-brand-gold mt-1">0 Categories</div>
+            </div>
+          </div>
+
+          <!-- Share Milestone Card -->
+          <div class="p-4 rounded-xl bg-gradient-to-r from-brand-elevated to-brand-card border border-brand-border flex items-center justify-between">
+            <div>
+              <div class="text-xs font-bold text-white">Share Your Milestone</div>
+              <div class="text-[11px] text-slate-400">Copy financial independence progress card to clipboard</div>
+            </div>
+            <button onclick="centsibleApp.shareMilestone()" class="bg-brand-emerald hover:bg-brand-emeraldLight text-brand-dark font-bold text-xs px-3.5 py-2 rounded-lg transition flex items-center space-x-1.5">
+              <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+              <span>Copy Achievement</span>
+            </button>
+          </div>
+
+          <!-- Export & Cloud Backup -->
+          <div class="pt-2 border-t border-brand-border flex flex-wrap gap-2">
+            <button onclick="centsibleApp.exportDataBackup()" class="px-3 py-2 rounded-lg bg-brand-dark hover:bg-brand-elevated border border-brand-border text-xs text-slate-200 flex items-center space-x-1.5">
+              <i data-lucide="download" class="w-4 h-4 text-brand-emerald"></i>
+              <span>Export Vault Backup (JSON)</span>
+            </button>
+            <label class="px-3 py-2 rounded-lg bg-brand-dark hover:bg-brand-elevated border border-brand-border text-xs text-slate-200 flex items-center space-x-1.5 cursor-pointer">
+              <i data-lucide="upload" class="w-4 h-4 text-brand-sapphire"></i>
+              <span>Restore Backup</span>
+              <input type="file" accept=".json" class="hidden" onchange="centsibleApp.importDataBackup(event)">
+            </label>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: ADD TRANSACTION -->
+  <div id="addTxModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-brand-card border border-brand-border rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white">Add New Transaction</h3>
+        <button onclick="centsibleApp.closeModal('addTxModal')" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="centsibleApp.handleAddTxSubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Title / Merchant Name</label>
+          <input type="text" id="modalTxTitle" required placeholder="e.g. Whole Foods Market" class="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-emerald">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">Amount</label>
+            <input type="number" step="0.01" id="modalTxAmount" required placeholder="0.00" class="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-slate-100 font-mono focus:outline-none focus:border-brand-emerald">
+          </div>
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">Type</label>
+            <select id="modalTxType" class="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-emerald">
+              <option value="EXPENSE">Expense</option>
+              <option value="INCOME">Income</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">Category</label>
+            <select id="modalTxCategory" class="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-emerald">
+              <option value="Food & Dining">Food & Dining</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Transportation">Transportation</option>
+              <option value="Utilities">Utilities</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Health">Health</option>
+              <option value="Income">Income / Salary</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-300 font-semibold mb-1">Account</label>
+            <select id="modalTxAccount" class="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-emerald">
+              <option value="Chase Sapphire US">Chase Sapphire US</option>
+              <option value="Barclays UK">Barclays UK</option>
+              <option value="HDFC Salary IN">HDFC Salary IN</option>
+              <option value="Revolut Global">Revolut Global</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="pt-2 flex justify-end space-x-2">
+          <button type="button" onclick="centsibleApp.closeModal('addTxModal')" class="px-4 py-2 rounded-lg bg-brand-elevated text-slate-300 font-semibold">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-brand-emerald text-brand-dark font-bold hover:bg-brand-emeraldLight">Save Transaction</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD BUDGET -->
+  <div id="addBudgetModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-brand-card border border-brand-border rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white">Create Category Budget</h3>
+        <button onclick="centsibleApp.closeModal('addBudgetModal')" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="centsibleApp.handleAddBudgetSubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Category</label>
+          <input type="text" id="modalBudgetCategory" required placeholder="e.g. Travel, Gym, Coffee" class="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-emerald">
+        </div>
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Monthly Limit ($)</label>
+          <input type="number" step="1" id="modalBudgetLimit" required placeholder="300" class="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-slate-100 font-mono focus:outline-none focus:border-brand-emerald">
+        </div>
+
+        <div class="pt-2 flex justify-end space-x-2">
+          <button type="button" onclick="centsibleApp.closeModal('addBudgetModal')" class="px-4 py-2 rounded-lg bg-brand-elevated text-slate-300 font-semibold">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-brand-emerald text-brand-dark font-bold hover:bg-brand-emeraldLight">Set Budget</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD SAVINGS GOAL -->
+  <div id="addGoalModal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-brand-card border border-brand-border rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-bold text-white">Create Savings Target</h3>
+        <button onclick="centsibleApp.closeModal('addGoalModal')" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="centsibleApp.handleAddGoalSubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Target Name</label>
+          <input type="text" id="modalGoalTitle" required placeholder="e.g. Tesla Down Payment" class="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-brand-emerald">
+        </div>
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Target Goal Amount ($)</label>
+          <input type="number" step="10" id="modalGoalTarget" required placeholder="10000" class="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-slate-100 font-mono focus:outline-none focus:border-brand-emerald">
+        </div>
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">Current Saved ($)</label>
+          <input type="number" step="10" id="modalGoalCurrent" required placeholder="1500" class="w-full bg-brand-dark border border-brand-border rounded-lg px-3 py-2 text-slate-100 font-mono focus:outline-none focus:border-brand-emerald">
+        </div>
+
+        <div class="pt-2 flex justify-end space-x-2">
+          <button type="button" onclick="centsibleApp.closeModal('addGoalModal')" class="px-4 py-2 rounded-lg bg-brand-elevated text-slate-300 font-semibold">Cancel</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-brand-emerald text-brand-dark font-bold hover:bg-brand-emeraldLight">Start Goal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- VAULT LOCK OVERLAY -->
+  <div id="vaultLockOverlay" class="hidden fixed inset-0 z-50 bg-brand-dark/95 backdrop-blur-xl flex items-center justify-center p-4">
+    <div class="bg-brand-card border border-brand-border rounded-3xl max-w-sm w-full p-8 text-center space-y-6 shadow-2xl">
+      <div class="w-16 h-16 rounded-2xl bg-brand-emerald/10 text-brand-emerald mx-auto flex items-center justify-center border border-brand-emerald/30 shadow-lg shadow-brand-emerald/10">
+        <i data-lucide="lock" class="w-8 h-8"></i>
+      </div>
+      <div>
+        <h2 class="text-xl font-bold text-white">CENTSIBLE Vault Locked</h2>
+        <p class="text-xs text-slate-400 mt-1">Biometric security or 4-digit PIN required</p>
+      </div>
+
+      <div class="flex justify-center space-x-3 my-2" id="pinDots">
+        <span class="w-3.5 h-3.5 rounded-full border-2 border-brand-border bg-brand-dark"></span>
+        <span class="w-3.5 h-3.5 rounded-full border-2 border-brand-border bg-brand-dark"></span>
+        <span class="w-3.5 h-3.5 rounded-full border-2 border-brand-border bg-brand-dark"></span>
+        <span class="w-3.5 h-3.5 rounded-full border-2 border-brand-border bg-brand-dark"></span>
+      </div>
+
+      <!-- Keypad -->
+      <div class="grid grid-cols-3 gap-3 font-mono text-base font-bold text-slate-200">
+        <button onclick="centsibleApp.enterPin(1)" class="p-3.5 rounded-xl bg-brand-elevated hover:bg-brand-border transition">1</button>
+        <button onclick="centsibleApp.enterPin(2)" class="p-3.5 rounded-xl bg-brand-elevated hover:bg-brand-border transition">2</button>
+        <button onclick="centsibleApp.enterPin(3)" class="p-3.5 rounded-xl bg-brand-elevated hover:bg-brand-border transition">3</button>
+        <button onclick="centsibleApp.enterPin(4)" class="p-3.5 rounded-xl bg-brand-elevated hover:bg-brand-border transition">4</button>
+        <button onclick="centsibleApp.enterPin(5)" class="p-3.5 rounded-xl bg-brand-elevated hover:bg-brand-border transition">5</button>
+        <button onclick="centsibleApp.enterPin(6)" class="p-3.5 rounded-xl bg-brand-elevated hover:bg-brand-border transition">6</button>
+        <button onclick="centsibleApp.enterPin(7)" class="p-3.5 rounded-xl bg-brand-elevated hover:bg-brand-border transition">7</button>
+        <button onclick="centsibleApp.enterPin(8)" class="p-3.5 rounded-xl bg-brand-elevated hover:bg-brand-border transition">8</button>
+        <button onclick="centsibleApp.enterPin(9)" class="p-3.5 rounded-xl bg-brand-elevated hover:bg-brand-border transition">9</button>
+        <button onclick="centsibleApp.clearPin()" class="p-3.5 rounded-xl bg-brand-elevated hover:bg-brand-border text-xs text-slate-400">CLEAR</button>
+        <button onclick="centsibleApp.enterPin(0)" class="p-3.5 rounded-xl bg-brand-elevated hover:bg-brand-border transition">0</button>
+        <button onclick="centsibleApp.unlockWithBiometrics()" class="p-3.5 rounded-xl bg-brand-emerald/20 text-brand-emerald hover:bg-brand-emerald/30 text-xs flex items-center justify-center">
+          <i data-lucide="fingerprint" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="text-[11px] text-slate-500">Default PIN: 1234 or click Fingerprint</div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-6 right-6 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- Footer -->
+  <footer class="mt-auto border-t border-brand-border bg-brand-dark/80 px-6 py-4 text-center text-xs text-slate-500">
+    <p>CENTSIBLE — Intelligent Personal Finance, Multi-Currency Vault & UPI SMS Automation</p>
+  </footer>
+
+  <!-- App Script -->
+  <script src="app.js"></script>
+</body>
+</html>

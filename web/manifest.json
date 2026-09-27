@@ -1,0 +1,16 @@
+{
+  "name": "CENTSIBLE — Wealth Manager",
+  "short_name": "CENTSIBLE",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#080E1E",
+  "theme_color": "#0B132B",
+  "description": "Intelligent Money Management, Multi-Currency Vault & UPI SMS Automation",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2310B981'%3E%3Cpath d='M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z'/%3E%3C/svg%3E",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
